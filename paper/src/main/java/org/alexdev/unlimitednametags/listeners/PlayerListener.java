@@ -100,7 +100,7 @@ public class PlayerListener implements PackSendHandler {
     *
      */
     private void loadFoliaTeleportEvent() {
-        if (!isFolia()) {
+        if (!plugin.isFolia()) {
             return;
         }
 
@@ -118,15 +118,6 @@ public class PlayerListener implements PackSendHandler {
                 playerWorlds.put(uuid, currentLocation);
             }
         }, 1, 10);
-    }
-
-    private boolean isFolia() {
-        try {
-            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
     }
 
     public Optional<Player> getPlayerFromEntityId(int entityId) {

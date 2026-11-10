@@ -54,6 +54,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class UnlimitedNameTags extends JavaPlugin implements UnlimitedNameTagsInstancePaper {
 
     private boolean isPaper;
+    /** {@code true} on Folia and its forks (Canvas, ...), where entity state belongs to region threads. */
+    private boolean folia;
     private ConfigManager configManager;
     private NameTagManager nametagManager;
     private PlaceholderManager placeholderManager;
@@ -85,6 +87,7 @@ public final class UnlimitedNameTags extends JavaPlugin implements UnlimitedName
     @Override
     public void onEnable() {
         isPaper = isPaperSupported();
+        folia = isFoliaSupported();
         loadLibraries().join();
         kyoriManager = new KyoriManager(this);
 
@@ -201,6 +204,15 @@ public final class UnlimitedNameTags extends JavaPlugin implements UnlimitedName
     private boolean isPaperSupported() {
         try {
             Class.forName("io.papermc.paper.event.player.PlayerTrackEntityEvent");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    private boolean isFoliaSupported() {
+        try {
+            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
             return true;
         } catch (ClassNotFoundException e) {
             return false;

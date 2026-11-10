@@ -15,7 +15,7 @@ Custom stacked nametags for Paper servers: text, item, and block display rows wi
 
 ## Requirements
 
-- Paper 1.21.4+ or a compatible Paper fork such as Purpur or Folia.
+- Paper 1.21.4+ or a compatible Paper fork such as Purpur, Folia or Canvas.
 - PacketEvents installed on the server.
 - Spigot and other non-Paper servers are not supported.
 

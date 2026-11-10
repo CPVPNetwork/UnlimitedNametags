@@ -1,6 +1,5 @@
 package org.alexdev.unlimitednametags.nametags;
 
-import me.clip.placeholderapi.PlaceholderAPI;
 import org.alexdev.unlimitednametags.UnlimitedNameTags;
 import org.alexdev.unlimitednametags.api.UntConditionalManagerPaper;
 import org.alexdev.unlimitednametags.condition.JexlConditionEvaluator;
@@ -30,9 +29,8 @@ public class ConditionalManager implements UntConditionalManagerPaper {
             return false;
         }
 
-        final String entireExpression = plugin.getPlaceholderManager().getPapiManager().isPapiEnabled() ?
-                PlaceholderAPI.setPlaceholders(player, trimmed) :
-                trimmed;
+        final String entireExpression = plugin.getPlaceholderManager().getPapiManager()
+                .setPlaceholdersOnce(player, trimmed);
 
         return jexlConditionEvaluator.evaluate(entireExpression);
     }
@@ -49,9 +47,8 @@ public class ConditionalManager implements UntConditionalManagerPaper {
             return false;
         }
 
-        final String entireExpression = plugin.getPlaceholderManager().getPapiManager().isPapiEnabled() ?
-                PlaceholderAPI.setRelationalPlaceholders(viewer, owner, trimmed) :
-                trimmed;
+        final String entireExpression = plugin.getPlaceholderManager().getPapiManager()
+                .setRelationalPlaceholdersOnce(viewer, owner, trimmed);
 
         return jexlConditionEvaluator.evaluate(entireExpression);
     }

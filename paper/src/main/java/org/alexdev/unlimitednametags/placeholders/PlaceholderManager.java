@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,6 +56,8 @@ public class PlaceholderManager {
     private static final String ELSE_PLACEHOLDER = "ELSE";
     private static final int maxIndex = 16777215;
     private static final int maxMIndex = 10;
+    /** Folia: upper bound for a nametag resolution queued on a region thread (e.g. player stuck mid teleport). */
+    private static final long REGION_TIMEOUT_SECONDS = 5L;
     private final UnlimitedNameTags plugin;
     private final ExecutorService executorService;
     private final PAPIManager papiManager;
@@ -92,6 +95,7 @@ public class PlaceholderManager {
 
     public void reload() {
         cachedComponents.clear();
+        papiManager.clearCache();
         this.cachedPlaceholders = Maps.newConcurrentMap();
         plugin.getPlayerListener().getOnlinePlayers().values().forEach(p ->
                 cachedPlaceholders.put(p.getUniqueId(), buildExpiringMap()));
@@ -124,6 +128,7 @@ public class PlaceholderManager {
 
     public void removePlayer(@NotNull Player player) {
         cachedPlaceholders.remove(player.getUniqueId());
+        papiManager.removePlayer(player.getUniqueId());
         HelmetRuleDebugThrottle.remove(player.getUniqueId());
     }
 
@@ -188,17 +193,26 @@ public class PlaceholderManager {
     @NotNull
     public CompletableFuture<Map<Player, Component>> applyPlaceholders(@NotNull Player player, @NotNull Settings.DisplayGroup group,
                                                                        @NotNull List<Player> relationalPlayers) {
-        if (requiresRelationalEvaluation(group)) {
-            return CompletableFuture.supplyAsync(() -> {
-                final Map<Player, Component> result = Maps.newHashMapWithExpectedSize(relationalPlayers.size());
-                for (Player viewer : relationalPlayers) {
-                    final List<String> strings = collectActiveLineTexts(player, viewer, group);
-                    result.put(viewer, buildComponentForViewer(player, viewer, strings));
-                }
-                return result;
-            }, executorService);
+        final Supplier<Map<Player, Component>> task = () -> resolveComponents(player, group, relationalPlayers);
+        if (papiManager.needsRegionThread()) {
+            // Folia / Canvas: expansions read entity and world state, which only the owning region thread may touch.
+            return papiManager.supplyOnRegionThread(player, task).orTimeout(REGION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         }
-        return getCheckedLines(player, group).thenApplyAsync(strings -> createComponent(player, strings, relationalPlayers), executorService);
+        return CompletableFuture.supplyAsync(task, executorService);
+    }
+
+    @NotNull
+    private Map<Player, Component> resolveComponents(@NotNull Player player, @NotNull Settings.DisplayGroup group,
+                                                     @NotNull List<Player> relationalPlayers) {
+        if (requiresRelationalEvaluation(group)) {
+            final Map<Player, Component> result = Maps.newHashMapWithExpectedSize(relationalPlayers.size());
+            for (Player viewer : relationalPlayers) {
+                final List<String> strings = collectActiveLineTexts(player, viewer, group);
+                result.put(viewer, buildComponentForViewer(player, viewer, strings));
+            }
+            return result;
+        }
+        return createComponent(player, collectActiveLineTexts(player, player, group), relationalPlayers);
     }
 
     /**
@@ -310,11 +324,6 @@ public class PlaceholderManager {
 
         builder.append(text, lastAppendPosition, text.length());
         return builder.toString();
-    }
-
-    @NotNull
-    private CompletableFuture<List<String>> getCheckedLines(@NotNull Player player, @NotNull Settings.DisplayGroup group) {
-        return CompletableFuture.supplyAsync(() -> collectActiveLineTexts(player, player, group), executorService);
     }
 
     @NotNull
