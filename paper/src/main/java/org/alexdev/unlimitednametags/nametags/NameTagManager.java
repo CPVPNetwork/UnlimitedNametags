@@ -1069,6 +1069,16 @@ public class NameTagManager implements UntNametagManagerPaper {
         return plugin.getPlaceholderManager().applyPlaceholders(player, displayGroup, layoutPlayers)
                 .thenApply(lines -> new ResolvedDisplayRow(index, displayGroup, display, layoutPlayers, lines, lines.get(player)))
                 .exceptionally(throwable -> {
+                    final Throwable cause = throwable instanceof java.util.concurrent.CompletionException
+                            && throwable.getCause() != null ? throwable.getCause() : throwable;
+                    if (cause instanceof java.util.concurrent.CancellationException
+                            || cause instanceof java.util.concurrent.TimeoutException) {
+                        // Folia: the owner left, or its region did not tick in time. The next refresh retries.
+                        if (debug) {
+                            plugin.getLogger().info("Skipped " + action + " nametag for " + player.getName() + ": " + cause);
+                        }
+                        return null;
+                    }
                     plugin.getLogger().log(java.util.logging.Level.SEVERE,
                             "Failed to " + action + " nametag for " + player.getName(), throwable);
                     return null;

@@ -8,6 +8,10 @@
 - **Gradle / Maven modules**: new **`api-paper`** artifact (`unlimitednametags-api-paper`) for Paper/Bukkit API (`UNTPaperAPI`, `Formatter`, `UnlimitedNameTagsInstancePaper`, `UntNametagManagerPaper`, …). **`api`** is UUID + Adventure only (no Paper). Addon projects should use **`compileOnly`** on **`unlimitednametags-api-paper`** instead of **`unlimitednametags-api`** alone when using `Player` or `UNTPaperAPI`.
 - **Service interfaces** on **`api`** use **`UUID`** instead of **`Player`** (`UntNametagManager`, `UntVanishManager`, `UntConditionalManager`, `VanishIntegration`, `HatHook`). Paper convenience overloads live on **`api-paper`** (`*Paper` interfaces with `default` methods).
 
+### Fixed
+
+- **Folia / Canvas placeholders**: PlaceholderAPI placeholders (nametag lines, `when` conditions, item/block materials, relational placeholders) are now resolved on the region thread that owns the player. Expansions that read world, block, inventory or nearby-entity state no longer fail with `Asynchronous ...` / `failed main thread check` errors and no longer show up unresolved in the nametag. Behaviour on Paper is unchanged.
+
 ### Added
 
 - **ITEM display custom sources**: `DisplayGroup` accepts either `customModelData` or `itemModel` on `itemMaterial`; when Nexo is enabled, `nexoId` resolves the complete Nexo item. The previous Java constructor remains binary-compatible.
